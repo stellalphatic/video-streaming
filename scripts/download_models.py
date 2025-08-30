@@ -52,8 +52,8 @@ MODELS_TO_DOWNLOAD = {
         "local_dir": BASE_MODELS_DIR / "syncnet"
     },
     "face_parse_bisent": {
-        "type": "gdown",
-        "id": "154JgKpzCPW82qINcVieuPH3fZ2e0P812",
+        "type": "url",
+        "url": "https://drive.google.com/uc?export=download&id=154JgKpzCPW82qINcVieuPH3fZ2e0P812",
         "output": BASE_MODELS_DIR / "face-parse-bisent" / "79999_iter.pth"
     },
     "resnet18": {
@@ -63,49 +63,60 @@ MODELS_TO_DOWNLOAD = {
     }
 }
 
-def download_from_hf(repo_id: str, filename: str, local_dir: Path):
-    """Downloads a file from Hugging Face Hub."""
-    try:
-        logger.info(f"Downloading {filename} from {repo_id}...")
-        hf_hub_download(
-            repo_id=repo_id,
-            filename=filename,
-            local_dir=local_dir,
-            local_dir_use_symlinks=False,
-            resume_download=True,
-        )
-        logger.info(f"✅ Successfully downloaded {filename}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Failed to download {filename} from {repo_id}. Error: {e}")
-        return False
-
-def download_from_gdown(file_id: str, output_path: Path):
-    """Downloads a file from Google Drive using gdown."""
-    try:
-        logger.info(f"Downloading {output_path.name} from Google Drive...")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        gdown.download(id=file_id, output=str(output_path), quiet=False)
-        logger.info(f"✅ Successfully downloaded {output_path.name}")
-        return True
-    except Exception as e:
-        logger.error(f"❌ Failed to download from gdown (ID: {file_id}). Error: {e}")
-        return False
-
 def download_from_url(url: str, output_path: Path):
-    """Downloads a file from a direct URL."""
+    """Downloads a file from a direct URL, handling Google Drive confirmations."""
     try:
         logger.info(f"Downloading {output_path.name} from {url}...")
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        with requests.get(url, stream=True) as r:
-            r.raise_for_status()
-            with open(output_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=8192):
+        
+        session = requests.Session()
+        # Use a standard user-agent
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
+        response = session.get(url, stream=True, headers=headers)
+        
+        # Handle Google Drive's "this file is large" confirmation page
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                params = {'id': url.split('id=')[1], 'confirm': value, 'export': 'download'}
+                response = session.get("https://drive.google.com/uc", params=params, stream=True, headers=headers)
+
+        response.raise_for_status()
+        with open(output_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
                     f.write(chunk)
+        
         logger.info(f"✅ Successfully downloaded {output_path.name}")
         return True
     except Exception as e:
-        logger.error(f"❌ Failed to download from URL {url}. Error: {e}")
+        logger.error(f"❌ Failed to download from URL {url}. Error: {e}", exc_info=True)
+        return False
+
+def download_from_url(url: str, output_path: Path):
+    """Downloads a file from a direct URL, handling Google Drive confirmations."""
+    try:
+        logger.info(f"Downloading {output_path.name} from {url}...")
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        
+        session = requests.Session()
+        response = session.get(url, stream=True)
+        
+        # Handle Google Drive's "this file is large" confirmation page
+        for key, value in response.cookies.items():
+            if key.startswith('download_warning'):
+                params = {'id': url.split('id=')[1], 'confirm': value, 'export': 'download'}
+                response = session.get("https://drive.google.com/uc", params=params, stream=True)
+
+        response.raise_for_status()
+        with open(output_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+        
+        logger.info(f"✅ Successfully downloaded {output_path.name}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to download from URL {url}. Error: {e}", exc_info=True)
         return False
 
 def main():
@@ -118,9 +129,6 @@ def main():
             for f in details["files"]:
                 if not download_from_hf(details["repo_id"], f, details["local_dir"]):
                     all_downloads_succeeded = False
-        elif details["type"] == "gdown":
-            if not download_from_gdown(details["id"], details["output"]):
-                all_downloads_succeeded = False
         elif details["type"] == "url":
             if not download_from_url(details["url"], details["output"]):
                 all_downloads_succeeded = False
