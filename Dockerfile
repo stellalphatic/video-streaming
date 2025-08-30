@@ -20,14 +20,22 @@ RUN useradd --create-home appuser
 WORKDIR /home/appuser/app
 USER appuser
 
-# Copy requirements file and install dependencies as the app user
+# Copy requirements file and install Python dependencies
 COPY --chown=appuser:appuser requirements.txt .
 RUN pip3 install --no-cache-dir --user -r requirements.txt
+
+# --- START: MuseTalk Integration ---
+# Clone the MuseTalk repository because it's not an installable package
+RUN git clone https://github.com/TMElyralab/MuseTalk.git
+# Add the cloned repository to Python's path so we can import from it
+ENV PYTHONPATH "${PYTHONPATH}:/home/appuser/app/MuseTalk"
+# --- END: MuseTalk Integration ---
 
 # Copy the rest of the application code
 COPY --chown=appuser:appuser . .
 
 # Make the model download script executable and run it
+# This script will download models into the directories your app expects
 RUN chmod +x scripts/download_models.py
 RUN python3 scripts/download_models.py
 
