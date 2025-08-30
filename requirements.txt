@@ -1,37 +1,42 @@
-# Core FastAPI and web framework
+# --- Core Application Dependencies ---
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
 websockets==12.0
-python-multipart==0.0.6
-
-# Computer Vision and Image Processing
-opencv-python-headless==4.8.1.78
-Pillow==10.1.0
-numpy==1.24.3
-
-# Audio Processing
-librosa==0.10.1
-soundfile==0.12.1
-
-# Machine Learning and AI
-torch==2.1.1
-torchvision==0.16.1
-torchaudio==2.1.1
-scikit-image==0.22.0
-huggingface-hub==0.20.3
-
-# HTTP Client
-aiohttp==3.9.1
-requests==2.31.0
-
-# System Monitoring
-psutil==5.9.6
-
-# Utilities
 python-dotenv==1.0.0
+aiohttp==3.9.1
 pydantic==2.5.0
+
+
+# From MuseTalk requirements.txt
+diffusers==0.24.0
+accelerate==0.28.0
+numpy==1.24.3
+opencv-python==4.9.0.80
+soundfile==0.12.1
+transformers==4.39.2
+huggingface-hub==0.20.3
+librosa==0.10.1
+einops==0.8.0
+gdown==4.7.1
+requests==2.31.0
+imageio[ffmpeg]==2.33.1
+omegaconf==2.3.0
+ffmpeg-python==0.2.0
+moviepy==1.0.3
+
+# From ouur own existing setup
+torch==2.0.1
+torchvision==0.15.2
+torchaudio==2.0.2
+scikit-image==0.22.0
+python-multipart==0.0.6
+Pillow==10.1.0
+psutil==5.9.6
 asyncio-throttle==1.0.2
 
-# Development and Testing
-pytest==7.4.3
-pytest-asyncio==0.21.1
+# MMLab Packages (from MuseTalk README)
+openmim==0.3.9
+mmengine==0.10.3
+mmcv==2.0.1
+mmdet==3.1.0
+mmpose==1.1.0
