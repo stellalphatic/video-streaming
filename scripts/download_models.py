@@ -4,69 +4,105 @@
 import os
 import sys
 import requests
-from pathlib import Path
 import logging
+from pathlib import Path
+from huggingface_hub import hf_hub_download
 
-logging.basicConfig(level=logging.INFO)
+# --- Configuration ---
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-def download_file(url: str, filepath: str, chunk_size: int = 8192):
-    """Download file with progress"""
+# --- Hugging Face Models ---
+# This structure defines the models to be downloaded from Hugging Face Hub.
+HF_MODELS = [
+    # MuseTalk UNet (the main model)
+    {"repo_id": "TMElyralab/MuseTalk", "filename": "unet/config.json", "local_dir": "models/musetalk_1.5"},
+    {"repo_id": "TMElyralab/MuseTalk", "filename": "unet/diffusion_pytorch_model.bin", "local_dir": "models/musetalk_1.5"},
+    
+    # MuseTalk Face Alignment
+    {"repo_id": "TMElyralab/MuseTalk", "filename": "face_alignment.pth", "local_dir": "models/musetalk_1.5"},
+    
+    # StabilityAI VAE (used by MuseTalk)
+    {"repo_id": "stabilityai/sd-vae-ft-mse", "filename": "config.json", "local_dir": "models/musetalk_1.5/vae"},
+    {"repo_id": "stabilityai/sd-vae-ft-mse", "filename": "diffusion_pytorch_model.bin", "local_dir": "models/musetalk_1.5/vae"},
+]
+
+# --- Other Models (e.g., from Google Storage) ---
+OTHER_MODELS = {
+    "models/face_detection/face_landmarker.task": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
+}
+
+def download_from_hf(repo_id: str, filename: str, local_dir: str):
+    """Downloads a file from Hugging Face Hub."""
+    full_path = Path(local_dir) / Path(filename).name
+    if full_path.exists():
+        logger.info(f"✓ Model already exists: {full_path}")
+        return True
+    
+    logger.info(f"Downloading {filename} from {repo_id}...")
+    try:
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            local_dir=local_dir,
+            local_dir_use_symlinks=False,
+            resume_download=True,
+        )
+        logger.info(f"✅ Successfully downloaded {filename}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to download {filename} from {repo_id}. Error: {e}")
+        return False
+    
+
+
+def download_from_url(url: str, filepath: str):
+    """Downloads a file from a direct URL."""
+    full_path = Path(filepath)
+    if full_path.exists():
+        logger.info(f"✓ Model already exists: {full_path}")
+        return True
+        
+    logger.info(f"Downloading {filepath} from {url}...")
     try:
         response = requests.get(url, stream=True)
         response.raise_for_status()
         
-        total_size = int(response.headers.get('content-length', 0))
-        downloaded = 0
+        full_path.parent.mkdir(parents=True, exist_ok=True)
         
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=chunk_size):
+        with open(full_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
-                    downloaded += len(chunk)
-                    
-                    if total_size > 0:
-                        progress = (downloaded / total_size) * 100
-                        print(f"\rDownloading {os.path.basename(filepath)}: {progress:.1f}%", end='')
         
-        print(f"\n✅ Downloaded: {filepath}")
+        logger.info(f"✅ Downloaded: {filepath}")
         return True
-        
     except Exception as e:
         logger.error(f"Failed to download {url}: {e}")
         return False
+    
 
 def main():
-    """Download all required models"""
+    """Download all required models."""
+    logger.info("--- Starting Model Download Process ---")
     
-    models = {
-        # MuseTalk 1.5 models
-        "models/musetalk_1.5/pytorch_model.bin": "https://huggingface.co/TMElyralab/MuseTalk/resolve/main/pytorch_model.bin",
-        "models/musetalk_1.5/config.json": "https://huggingface.co/TMElyralab/MuseTalk/resolve/main/config.json",
-        "models/musetalk_1.5/face_alignment.pth": "https://huggingface.co/TMElyralab/MuseTalk/resolve/main/face_alignment.pth",
-        
-        # VAE models
-        "models/musetalk_1.5/vae/config.json": "https://huggingface.co/stabilityai/sd-vae-ft-mse/resolve/main/config.json",
-        "models/musetalk_1.5/vae/diffusion_pytorch_model.bin": "https://huggingface.co/stabilityai/sd-vae-ft-mse/resolve/main/diffusion_pytorch_model.bin",
-        
-        # Face detection models
-        "models/face_detection/face_landmarker.task": "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task"
-    }
+    all_downloads_succeeded = True
+
+    # Download from Hugging Face
+    for model in HF_MODELS:
+        if not download_from_hf(model["repo_id"], model["filename"], model["local_dir"]):
+            all_downloads_succeeded = False
+
+    # Download from other URLs
+    for filepath, url in OTHER_MODELS.items():
+        if not download_from_url(url, filepath):
+            all_downloads_succeeded = False
+
+    if not all_downloads_succeeded:
+        logger.error("One or more model downloads failed. Please check the logs.")
+        sys.exit(1)
     
-    logger.info("Starting model download...")
-    
-    for filepath, url in models.items():
-        if not os.path.exists(filepath):
-            logger.info(f"Downloading {filepath}...")
-            if not download_file(url, filepath):
-                logger.error(f"Failed to download {filepath}")
-                sys.exit(1)
-        else:
-            logger.info(f"✓ Model already exists: {filepath}")
-    
-    logger.info("All models downloaded successfully!")
+    logger.info("--- All models downloaded successfully! ---")
 
 if __name__ == "__main__":
     main()

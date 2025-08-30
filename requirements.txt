@@ -8,6 +8,7 @@ python-multipart==0.0.6
 opencv-python==4.8.1.78
 Pillow==10.1.0
 numpy==1.24.3
+opencv-python-headless==4.8.1.78
 
 # Audio Processing
 librosa==0.10.1
@@ -17,9 +18,12 @@ soundfile==0.12.1
 torch==2.1.1
 torchvision==0.16.1
 torchaudio==2.1.1
+scikit-image==0.22.0
 
-# MuseTalk Dependencies (install from source)
-# git+https://github.com/TMElyralab/MuseTalk.git
+
+huggingface-hub==0.20.3 
+# MuseTalk Dependencies
+git+https://github.com/TMElyralab/MuseTalk.git
 
 # HTTP Client
 aiohttp==3.9.1
