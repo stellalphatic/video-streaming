@@ -1,0 +1,38 @@
+# Core FastAPI and web framework
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+websockets==12.0
+python-multipart==0.0.6
+
+# Computer Vision and Image Processing
+opencv-python==4.8.1.78
+Pillow==10.1.0
+numpy==1.24.3
+
+# Audio Processing
+librosa==0.10.1
+soundfile==0.12.1
+
+# Machine Learning and AI
+torch==2.1.1
+torchvision==0.16.1
+torchaudio==2.1.1
+
+# MuseTalk Dependencies (install from source)
+# git+https://github.com/TMElyralab/MuseTalk.git
+
+# HTTP Client
+aiohttp==3.9.1
+requests==2.31.0
+
+# System Monitoring
+psutil==5.9.6
+
+# Utilities
+python-dotenv==1.0.0
+pydantic==2.5.0
+asyncio-throttle==1.0.2
+
+# Development and Testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
