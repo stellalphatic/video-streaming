@@ -48,7 +48,7 @@ RUN mim install mmpose==1.1.0
 COPY . .
 
 # Download models DURING BUILD (not runtime) - this fixes the timeout
-COPY download_models.py .
+COPY scripts/download_models.py .
 RUN python download_models.py
 
 # Change ownership to non-root user
