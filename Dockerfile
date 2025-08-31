@@ -1,5 +1,5 @@
 # Fixed Dockerfile for Cloud Run - Downloads models during build, not runtime
-FROM python:3.10-slim
+FROM python:3.10
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
