@@ -199,4 +199,4 @@ async def websocket_stream(
         logger.info(f"WebSocket for session {session_id} closed.")
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8000)), workers=1)
+    uvicorn.run("main:app", host="0.0.0.0", port=int(os.getenv("PORT", 8080)), workers=1)
