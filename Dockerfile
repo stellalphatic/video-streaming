@@ -1,59 +1,70 @@
-
-FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu22.04
+# Fixed Dockerfile for Cloud Run - Downloads models during build, not runtime
+FROM python:3.10-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
-# Install system dependencies as ROOT user
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
-    python3.10 \
-    python3-pip \
     git \
     wget \
+    curl \
     ffmpeg \
+    libsm6 \
+    libxext6 \
+    libglib2.0-0 \
+    libgl1-mesa-glx \
     && rm -rf /var/lib/apt/lists/*
 
-# Set up a non-root user and create the app directory
-RUN useradd --create-home appuser
+# Create non-root user
+RUN useradd -m -u 1000 appuser
 WORKDIR /home/appuser/app
 
-# --- START: MuseTalk Integration ---
-# Clone the MuseTalk repository as ROOT first
+# Clone MuseTalk repository DURING BUILD
 RUN git clone https://github.com/TMElyralab/MuseTalk.git /home/appuser/app/MuseTalk
-# --- END: MuseTalk Integration ---
 
-# Copy requirements and install them as ROOT
+# Copy requirements and install
 COPY requirements.txt .
-RUN pip3 install --no-cache-dir -r requirements.txt
-# Install MMLab packages using mim as ROOT
+RUN pip install --no-cache-dir --upgrade pip
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Install CPU-only PyTorch for Cloud Run (no GPU)
+RUN pip install --no-cache-dir \
+    torch==2.0.1+cpu \
+    torchvision==0.15.2+cpu \
+    torchaudio==2.0.2+cpu \
+    --index-url https://download.pytorch.org/whl/cpu
+
+# Install MMLab packages
+RUN pip install openmim
 RUN mim install mmengine==0.10.3
-RUN mim install mmcv==2.0.1
+RUN mim install "mmcv>=2.0.0"
 RUN mim install mmdet==3.1.0
 RUN mim install mmpose==1.1.0
 
-# Copy the rest of the application code
+# Copy application code
 COPY . .
 
-# --- FIX: Change ownership of the entire app directory to the non-root user ---
+# Download models DURING BUILD (not runtime) - this fixes the timeout
+COPY download_models.py .
+RUN python download_models.py
+
+# Change ownership to non-root user
 RUN chown -R appuser:appuser /home/appuser/app
 
-# Now, switch to the non-root user for all subsequent commands
+# Switch to non-root user
 USER appuser
 
-# Add the cloned repository to Python's path so we can import from it
-ENV PYTHONPATH "${PYTHONPATH}:/home/appuser/app/MuseTalk"
+# Set Python path to include MuseTalk
+ENV PYTHONPATH="/home/appuser/app/MuseTalk:${PYTHONPATH}"
 
-# Make the model download script executable and run it as the appuser
-RUN chmod +x scripts/download_models.py
-RUN python3 scripts/download_models.py
+# Expose port (Cloud Run will set PORT environment variable)
+EXPOSE 8080
 
-# Expose the port the application will run on
-EXPOSE 8000
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
 
-# Health check to ensure the service is responsive before serving traffic
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
-
-# Set the command to run the application
-CMD ["./run.sh"]
+# Start command - simplified for faster startup
+CMD ["python", "main.py"]
