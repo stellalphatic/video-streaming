@@ -4,7 +4,6 @@ import sys
 import logging
 from pathlib import Path
 from huggingface_hub import hf_hub_download
-import gdown
 import requests
 
 # --- Configuration ---
@@ -63,33 +62,25 @@ MODELS_TO_DOWNLOAD = {
     }
 }
 
-def download_from_url(url: str, output_path: Path):
-    """Downloads a file from a direct URL, handling Google Drive confirmations."""
+def download_from_hf(repo_id: str, filename: str, local_dir: Path):
+    """Downloads a file from Hugging Face Hub."""
     try:
-        logger.info(f"Downloading {output_path.name} from {url}...")
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Downloading {filename} from {repo_id}...")
+        # Ensure the target directory within the local_dir exists
+        target_path = Path(local_dir) / Path(filename).parent
+        target_path.mkdir(parents=True, exist_ok=True)
         
-        session = requests.Session()
-        # Use a standard user-agent
-        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36'}
-        response = session.get(url, stream=True, headers=headers)
-        
-        # Handle Google Drive's "this file is large" confirmation page
-        for key, value in response.cookies.items():
-            if key.startswith('download_warning'):
-                params = {'id': url.split('id=')[1], 'confirm': value, 'export': 'download'}
-                response = session.get("https://drive.google.com/uc", params=params, stream=True, headers=headers)
-
-        response.raise_for_status()
-        with open(output_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-        
-        logger.info(f"✅ Successfully downloaded {output_path.name}")
+        hf_hub_download(
+            repo_id=repo_id,
+            filename=filename,
+            local_dir=local_dir,
+            local_dir_use_symlinks=False,
+            resume_download=True,
+        )
+        logger.info(f"✅ Successfully downloaded {filename}")
         return True
     except Exception as e:
-        logger.error(f"❌ Failed to download from URL {url}. Error: {e}", exc_info=True)
+        logger.error(f"❌ Failed to download {filename} from {repo_id}. Error: {e}")
         return False
 
 def download_from_url(url: str, output_path: Path):
@@ -99,13 +90,14 @@ def download_from_url(url: str, output_path: Path):
         output_path.parent.mkdir(parents=True, exist_ok=True)
         
         session = requests.Session()
-        response = session.get(url, stream=True)
+        headers = {'User-Agent': 'Mozilla/5.0'}
+        response = session.get(url, stream=True, headers=headers)
         
         # Handle Google Drive's "this file is large" confirmation page
         for key, value in response.cookies.items():
             if key.startswith('download_warning'):
                 params = {'id': url.split('id=')[1], 'confirm': value, 'export': 'download'}
-                response = session.get("https://drive.google.com/uc", params=params, stream=True)
+                response = session.get("https://drive.google.com/uc", params=params, stream=True, headers=headers)
 
         response.raise_for_status()
         with open(output_path, 'wb') as f:
