@@ -28,6 +28,8 @@ RUN git clone https://github.com/TMElyralab/MuseTalk.git /home/appuser/app/MuseT
 # Set the PYTHONPATH to include the cloned repository
 # This is the key fix to ensure Python can find the MuseTalk modules
 ENV PYTHONPATH=/home/appuser/app/MuseTalk:$PYTHONPATH
+ENV MUSETALK_MODEL_PATH=/home/appuser/app/models
+ENV TORCH_HOME=/home/appuser/app/.cache/torch
 
 # Copy requirements and install
 COPY requirements.txt .
