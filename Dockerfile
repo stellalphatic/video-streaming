@@ -22,16 +22,25 @@ RUN apt-get update && apt-get install -y \
 RUN useradd -m -u 1000 appuser
 WORKDIR /home/appuser/app
 
-# --- THIS IS THE CRUCIAL NEW LINE ---
-# Install MuseTalk directly from the Git repository
-RUN pip install git+https://github.com/TMElyralab/MuseTalk.git
+# Clone MuseTalk repository and its submodules
+RUN git clone https://github.com/TMElyralab/MuseTalk.git /home/appuser/app/MuseTalk
+
+# Set the PYTHONPATH to include the cloned repository
+# This is the key fix to ensure Python can find the MuseTalk modules
+ENV PYTHONPATH=/home/appuser/app/MuseTalk:$PYTHONPATH
 
 # Copy requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip install --no-cache-dir torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
+# --- FIX: Install GPU-enabled PyTorch for L4 GPU ---
+# The index-url is crucial for installing the correct version
+RUN pip install --no-cache-dir \
+    torch==2.0.1+cu118 \
+    torchvision==0.15.2+cu118 \
+    torchaudio==2.0.2+cu118 \
+    --index-url https://download.pytorch.org/whl/cu118
 
 # Install MMLab packages
 RUN pip install openmim
@@ -48,13 +57,13 @@ COPY scripts/download_models.py .
 RUN python download_models.py
 
 # Change ownership to non-root user
-RUN chown -R appuser:appuser /home/app/
+RUN chown -R appuser:appuser /home/appuser/app
 
 # Switch to non-root user
 USER appuser
 
-# Expose the port the app runs on
+# Expose the port
 EXPOSE 8080
 
 # Run the application
-CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080" ]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
