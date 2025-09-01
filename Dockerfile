@@ -24,12 +24,13 @@ WORKDIR /home/appuser/app
 
 # Clone MuseTalk repository DURING BUILD
 RUN git clone https://github.com/TMElyralab/MuseTalk.git /home/appuser/app/MuseTalk
+# --- THIS IS THE CRUCIAL NEW LINE ---
+RUN pip install -e ./MuseTalk
 
 # Copy requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip
 RUN pip install --no-cache-dir -r requirements.txt
-
 
 RUN pip install --no-cache-dir torch==2.0.1 torchvision==0.15.2 torchaudio==2.0.2 --index-url https://download.pytorch.org/whl/cu118
 
@@ -53,15 +54,8 @@ RUN chown -R appuser:appuser /home/appuser/app
 # Switch to non-root user
 USER appuser
 
-# Set Python path to include MuseTalk
-ENV PYTHONPATH="/home/appuser/app/MuseTalk:${PYTHONPATH}"
-
-# Expose port (Cloud Run will set PORT environment variable)
+# Expose the port the app runs on
 EXPOSE 8080
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
-
-# Start command - simplified for faster startup
-CMD ["python", "main.py"]
+# Run the application
+CMD [ "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080" ]
