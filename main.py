@@ -157,25 +157,26 @@ class SimpleVideoGenerator:
 async def load_models_background():
     """Load models in background with proper error handling"""
     global musetalk_model, is_loading_models
-    
+
     if is_loading_models:
         return
-        
+
     is_loading_models = True
     logger.info("Starting model loading...")
-    
+
     try:
         if MUSETALK_AVAILABLE:
-            logger.info("Loading MuseTalk models...")
+            logger.info("Loading MuseTalk models from disk...")
             
-            # Load MuseTalk models
+            # Load MuseTalk models from the pre-downloaded 'models' directory
+            # The docker build process ensures these files exist
             models = load_all_model(
-                model_path="models",
+                model_path="./models",
                 device=DEVICE
             )
             
             # Create MuseTalk model instance
-            musetalk_model = MuseTalkVideoGenerator(models['musetalk'])
+            musetalk_model = MuseTalkVideoGenerator(models)
             logger.info("MuseTalk models loaded successfully")
         else:
             logger.info("Using simple video generator (MuseTalk not available)")
@@ -285,7 +286,11 @@ def verify_api_key(auth: str = Depends(api_key_header)):
 async def startup_event():
     """Startup event - begin model loading"""
     logger.info(f"Starting video service on port {PORT}")
-    asyncio.create_task(load_models_background())
+    # We no longer need to call this here because get_ready_pipeline() will handle
+    # the loading on the first request if it's not already done.
+    # This change prevents the startup timeout.
+    # asyncio.create_task(load_models_background())
+    pass
 
 @app.get("/")
 async def root():
