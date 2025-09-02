@@ -28,6 +28,12 @@ WORKDIR /home/appuser/app
 # Clone MuseTalk repository and its submodules
 RUN git clone https://github.com/TMElyralab/MuseTalk.git /home/appuser/app/MuseTalk
 
+
+# Patch the hardcoded paths in the MuseTalk preprocessing file
+RUN sed -i "s|config_file = './musetalk/utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py'|config_file = '/home/appuser/app/MuseTalk/musetalk/utils/dwpose/rtmpose-l_8xb32-270e_coco-ubody-wholebody-384x288.py'|" /home/appuser/app/MuseTalk/musetalk/utils/preprocessing.py
+RUN sed -i "s|checkpoint_file = './models/dwpose/dw-ll_ucoco_384.pth'|checkpoint_file = '/home/appuser/app/models/dwpose/dw-ll_ucoco_384.pth'|" /home/appuser/app/MuseTalk/musetalk/utils/preprocessing.py
+# --- FIX END ---
+    
 # Set the PYTHONPATH to include the cloned repository
 # This is the key fix to ensure Python can find the MuseTalk modules
 ENV PYTHONPATH=/home/appuser/app/MuseTalk:$PYTHONPATH
