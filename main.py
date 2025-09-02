@@ -17,6 +17,10 @@ from pathlib import Path
 import threading
 from collections import deque
 
+# Configuration
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
 # Add MuseTalk to Python path
 musetalk_path = Path(__file__).parent / "MuseTalk"
 if musetalk_path.exists():
@@ -34,9 +38,6 @@ except ImportError as e:
     logger.warning(f"MuseTalk not available: {e}")
     MUSETALK_AVAILABLE = False
 
-# Configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-logger = logging.getLogger(__name__)
 
 API_KEY = os.getenv("VIDEO_SERVICE_API_KEY", "default_video_service_key_change_in_production")
 
