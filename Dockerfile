@@ -4,6 +4,9 @@ FROM python:3.10
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
+ENV HF_HOME=/home/appuser/app/.cache/huggingface
+ENV TRANSFORMERS_CACHE=/home/appuser/app/.cache/transformers
+ENV TORCH_CUDA_ARCH_LIST="6.0;6.1;7.0;7.5;8.0;8.6"
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
