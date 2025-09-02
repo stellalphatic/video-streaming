@@ -35,8 +35,8 @@ psutil==5.9.6
 asyncio-throttle==1.0.2
 
 # MMLab Packages (from MuseTalk README)
-openmim==0.3.9
-mmengine==0.10.3
-mmcv==2.0.1
-mmdet==3.1.0
-mmpose==1.1.0
+# openmim==0.3.9
+# mmengine==0.10.3
+# mmcv==2.0.1
+# mmdet==3.1.0
+# mmpose==1.1.0

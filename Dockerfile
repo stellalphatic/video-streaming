@@ -43,7 +43,7 @@ ENV TORCH_HOME=/home/appuser/app/.cache/torch
 # Copy requirements and install
 COPY requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip
-RUN pip install --no-cache-dir -r requirements.txt
+
 
 # --- FIX: Install GPU-enabled PyTorch for L4 GPU ---
 # The index-url is crucial for installing the correct version
@@ -54,11 +54,15 @@ RUN pip install --no-cache-dir \
     --index-url https://download.pytorch.org/whl/cu118
 
 # Install MMLab packages
-RUN pip install openmim
-RUN mim install mmengine==0.10.3
-RUN mim install "mmcv>=2.0.0"
-RUN mim install mmdet==3.1.0
-RUN mim install mmpose==1.1.0
+RUN pip install --no-cache-dir openmim
+
+# install mmcv-full with the correct version for your PyTorch/CUDA setup (cu118)
+RUN pip install --no-cache-dir 'mmcv-full==2.0.1' -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html
+
+# Third, install mmengine, mmdet and mmpose
+RUN mim install mmengine==0.10.3 mmdet==3.1.0 mmpose==1.1.0
+
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
