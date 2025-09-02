@@ -155,35 +155,38 @@ class SimpleVideoGenerator:
         return frame
 
 async def load_models_background():
-    """Load models with correct MuseTalk structure"""
+    """Load models in background with proper error handling"""
     global musetalk_model, is_loading_models
     
     if is_loading_models:
         return
         
     is_loading_models = True
-    logger.info("Starting video pipeline initialization...")
+    logger.info("Starting model loading...")
     
     try:
         if MUSETALK_AVAILABLE:
-            logger.info("Attempting to load MuseTalk models...")
-            try:
-                # Load MuseTalk models using correct structure
-                models = load_all_model()
-                musetalk_model = MuseTalkVideoGenerator(models)
-                logger.info("MuseTalk models loaded successfully")
-            except Exception as e:
-                logger.warning(f"MuseTalk loading failed: {e}, using simple generator")
-                musetalk_model = SimpleVideoGenerator()
+            logger.info("Loading MuseTalk models...")
+            
+            # Load MuseTalk models
+            models = load_all_model(
+                model_path="models",
+                device=DEVICE
+            )
+            
+            # Create MuseTalk model instance
+            musetalk_model = MuseTalkVideoGenerator(models['musetalk'])
+            logger.info("MuseTalk models loaded successfully")
         else:
-            logger.info("Using simple video generator")
+            logger.info("Using simple video generator (MuseTalk not available)")
             musetalk_model = SimpleVideoGenerator()
             
         pipeline_ready.set()
-        logger.info("Video pipeline ready")
+        logger.info("Video pipeline ready for requests")
         
     except Exception as e:
-        logger.error(f"Error in pipeline initialization: {e}")
+        logger.error(f"Error loading models: {e}")
+        logger.info("Falling back to simple video generator")
         musetalk_model = SimpleVideoGenerator()
         pipeline_ready.set()
     finally:
@@ -451,6 +454,6 @@ async def websocket_stream(websocket: WebSocket, session_id: str):
     finally:
         logger.info(f"Cleaning up session {session_id}")
 
-
+        
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=PORT, workers=1)
