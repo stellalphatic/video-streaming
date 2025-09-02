@@ -56,7 +56,7 @@ RUN pip install --no-cache-dir \
 # Install MMLab packages
 RUN pip install --no-cache-dir openmim
 
-RUN mim install "mmcv>=2.0.0" mmengine==0.10.3 mmdet==3.1.0 mmpose==1.1.0
+RUN mim install mmengine==0.10.3 "mmcv==2.1.0" mmdet==3.1.0 mmpose==1.1.0
 
 RUN pip install --no-cache-dir -r requirements.txt
 
