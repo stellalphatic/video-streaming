@@ -57,8 +57,7 @@ RUN pip install --no-cache-dir \
 RUN pip install --no-cache-dir openmim
 
 # install mmcv-full with the correct version for your PyTorch/CUDA setup (cu118)
-RUN pip install --no-cache-dir 'mmcv-full==2.0.1' -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html
-
+RUN pip install --no-cache-dir 'mmcv-full==2.0.0' -f https://download.openmmlab.com/mmcv/dist/cu118/torch2.0/index.html
 # Third, install mmengine, mmdet and mmpose
 RUN mim install mmengine==0.10.3 mmdet==3.1.0 mmpose==1.1.0
 

@@ -25,9 +25,9 @@ ffmpeg-python==0.2.0
 moviepy==1.0.3
 
 # From ouur own existing setup
-torch==2.0.1
-torchvision==0.15.2
-torchaudio==2.0.2
+# torch==2.0.1
+# torchvision==0.15.2
+# torchaudio==2.0.2
 scikit-image==0.22.0
 python-multipart==0.0.6
 Pillow==10.1.0
